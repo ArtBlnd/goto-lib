@@ -6,7 +6,7 @@ Feature GOTO library will support `Multi-Layering IR` to make more simplified, s
 Optimization Benefits
 ---------------------
 
-In optimziation benefits. for example, some kind of `Branch Elimination Optimization` or `Inline Optimization` can always useful on most of cpu architectures(like x86_64, ARM, etcs). So the goal is make optimization general and easier, which needs in more simplified IR code will be performed on highests level of IR layer. in another word, more specific IR layer, will perform more specific optimization, which something like `set[cond] instruction optimization`, `EH optimziation`, `cmov optimization` so IR Layering will decrease dependencies of each optimizations.
+In optimziation benefits. for example, some kind of `Branch Elimination Optimization` or `Inline Optimization` can always useful on most of cpu architectures(like x86_64, ARM, etcs). So the goal is make optimization general and easier, which means more simplified IR code will be performed on highests level of IR layer. in another word, more specific IR layer, will perform more specific optimization, which something like `set[cond] instruction optimization`, `EH optimziation`, `cmov optimization` so IR Layering will decrease dependencies of each optimizations.
 
 IR Highering / Lowering
 -----------------------
