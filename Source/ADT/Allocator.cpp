@@ -9,10 +9,9 @@ namespace GTFW
         m_alAllocatedBytes += allocatedBytes;
     }
 
-    void ADT::IAllocator::RecordFreedBytes(size_t freedBytes)
+    void ADT::IAllocator::RecordFreedCnt()
     {
         m_alFreedCnt++;
-        m_alFreedBytes += freedBytes;
     }
 
     bool ADT::IAllocator::CheckAllocatorMemoryConsistent() const
@@ -31,8 +30,8 @@ namespace GTFW
         return m_alAllocatedBytes;
     }
 
-    size_t ADT::IAllocator::GetFreedAsBytes() const
+    size_t ADT::IAllocator::GetFreedCount() const
     {
-        return m_alFreedBytes;
+        return m_alFreedCnt;
     }
 }

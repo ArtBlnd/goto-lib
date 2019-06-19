@@ -17,7 +17,7 @@ namespace GTFW
             // this will be used for debugging, consistent checking, also for after allocating offsets
             // so make sure that you are recording all stats when you are allocating object.
             void RecordAllocatedBytes(size_t allocatedBytes);
-            void RecordFreedBytes(size_t freedBytes);
+            void RecordFreedCnt();
 
             // Check that all memory has been freed
             // because some of allocators will free all memory when its distroyed. so it might cause memory corruption.
@@ -29,7 +29,7 @@ namespace GTFW
             virtual void free(void* pObject) = 0;
 
             size_t GetAllocatedAsBytes() const;
-            size_t GetFreedAsBytes() const;
+            size_t GetFreedCount() const;
         };
 
         class CommonAllocator
@@ -47,8 +47,21 @@ namespace GTFW
             };
 
         public:
-            void* allocate(size_t size) override;
-            void free(void* pObject) override;
+            void* allocate(size_t size) override
+            {
+                if (GetAllocatedAsBytes() + size > allocSize)
+                {
+                    // TODO : exception
+                }
+
+                RecordAllocatedBytes(size);
+                return &allocBuf[GetAllocatedAsBytes()];
+            }
+
+            void free(void* pObject) override
+            {
+                RecordFreedCnt();
+            }
         };
     }
 }
