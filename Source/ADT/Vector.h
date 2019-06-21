@@ -5,27 +5,26 @@ namespace GTFW
 {
     namespace ADT
     {
-        // ADT class VectorBase
+        template <class T>
         class VectorBase
         {
-            void*  m_vecElements = nullptr;
-            size_t m_vecSize     = 0;
-            size_t m_vecCapacity = 0;
-
-        protected:
-            VectorBase() = delete;
-            VectorBase(void* Elements, size_t Capacity);
+            T*     m_vbElement;
+            size_t m_vbSize;
+            size_t m_vbCapacity;
 
         public:
-            size_t size() const;
-            size_t capacity() const;
-        };
+            size_t GetCapacity() const;
+            size_t GetSize() const;
 
-        template <class T, size_t N>
-        class VectorTSSO
-        {
-            T             m_vecSSOBuffer[N];
-            unsigned char m_vecSSOSize;
+            const T& LookUp(size_t index) const
+            {
+                return m_vbElement[index];
+            }
+
+            T& LookUp(size_t index)
+            {
+                return m_vbElement[index];
+            }
         };
 
         // ADT class Vector
@@ -33,17 +32,10 @@ namespace GTFW
         // Template Types :
         //      T : Type of vector
         //      N : Small size of vector (See about Small-String Optimization)
-        template <class T, size_t N>
-        class Vector
+        template <class T, size_t N = 8>
+        class Vector : VectorBase<T>
         {
-            enum { TSSO_MASK = 0x01 };
-            enum { BASE_MASK = 0x01ul };
-
-            union
-            {
-                VectorTSSO bufTSSO;
-                VectorBase bufBase;
-            } m_vecData;
+            
         };
     }
 }
