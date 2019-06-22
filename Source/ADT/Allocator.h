@@ -64,6 +64,17 @@ namespace GTFW
             }
         };
 
+        template <class Ty>
+        class ObjectAllocatorStorage : IAllocatorStorage
+        {
+
+        };
+
+        class CommonAllocatorStorage : IAllocatorStorage
+        {
+
+        };
+
         template <class StorageT>
         class Allocator : public StorageT
         {
