@@ -1,7 +1,7 @@
 #ifndef __GTFW_LIB_ADT_VECTOR_H__
 #define __GTFW_LIB_ADT_VECTOR_H__
 
-namespace GTFW
+namespace Goto
 {
     namespace ADT
     {
@@ -35,7 +35,7 @@ namespace GTFW
         template <class T, size_t N = 8>
         class Vector : VectorBase<T>
         {
-            
+
         };
     }
 }

@@ -1,6 +1,6 @@
 #include <ADT/Vector.h>
 
-namespace GTFW
+namespace Goto
 {
     namespace ADT
     {

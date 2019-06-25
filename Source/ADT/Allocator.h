@@ -5,13 +5,15 @@
 
 #ifndef NO_VTABLE
 #ifdef _MSC_VER
+// novtable description does only exists in msvc compilers
+// gcc, clang or another compilers will remove virtual table automacally if its available.
 #define NO_VTABLE __declspec(novtable)
 #else
 #define NO_VTABLE
 #endif
 #endif
 
-namespace GTFW
+namespace Goto
 {
     namespace ADT
     {
@@ -43,13 +45,14 @@ namespace GTFW
         template <size_t SmallSize, size_t PtrSize = sizeof(void*)>
         struct SmallStorageBuffer
         {
-            SmallStorageBuffer* m_ssbPriv;
-            void*               m_ssbPool;
+            SmallStorageBuffer* m_ssbPriv = nullptr;
         };
 
         template <size_t SmallSize>
         class SmallAllocatorStroage : IAllocatorStorage
         {
+            size_t StorageLeftBytes = SmallSize;
+
             union 
             {
                 char               uStorageBuf[SmallSize];
@@ -61,13 +64,17 @@ namespace GTFW
 
             void* AllocateMemoryImpl(size_t size)
             {
+                if (StorageLeftBytes >= size)
+                {
+                    
+                }
             }
         };
 
         template <class Ty>
         class ObjectAllocatorStorage : IAllocatorStorage
         {
-
+            
         };
 
         class CommonAllocatorStorage : IAllocatorStorage
