@@ -69,17 +69,42 @@ namespace Goto
 
         void* AllocPage(size_t pages, unsigned int flags)
         {
+            // Tried to allocate zero pages
+            if (pages == 0)
+            {
+                return nullptr;
+            }
 
+            // Treid to allocate with no flags
+            if (flags == 0)
+            {
+                return nullptr;
+            }
+
+            return VirtualAlloc(nullptr, pages * QueryPageSize(), TransformHPF2MemFlags(flags), TransformHPF2PageFlags(flags));
         }
 
         bool FreePage(void* page)
         {
-
+            // If we are not decommiting it, the size should be zero
+            return VirtualFree(page, 0, MEM_RELEASE);
         }
 
         bool ModifyPage(void* page, size_t pages, unsigned int flags)
         {
+            // Tried to allocate zero pages
+            if (pages == 0)
+            {
+                return nullptr;
+            }
 
+            // Treid to allocate with no flags
+            if (flags == 0)
+            {
+                return nullptr;
+            }
+
+            return VirtualProtect(page, QueryPageSize() * pages, TransformHPF2PageFlags(flags), nullptr);
         }
 
         struct 
