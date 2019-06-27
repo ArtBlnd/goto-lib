@@ -1,9 +1,6 @@
 #include <Host/Memory.h>
 
-#define GTFW_PLATFORM_WINDOWS
 #ifdef GTFW_PLATFORM_WINDOWS
-
-#include <Windows.h>
 #include <Windows.h>
 namespace Goto
 {   
