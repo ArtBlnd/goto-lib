@@ -55,6 +55,9 @@ namespace Goto
             char                m_ssbSmallBuf[0];
         };
 
+        // This allocation storage will use stack, which is size of SmallSize in template operand
+        // and this will not perform common page allocation before use all of these stack allocations
+        // so it will be useful when you need to allocate small, fast, and temporal storge.
         template <size_t SmallSize>
         class SmallAllocatorStroage : IAllocatorStorage
         {
@@ -62,8 +65,8 @@ namespace Goto
 
             union
             {
-                char                StorageBuf[SmallSize + sizeof(void*)];
-                SmallStorageBuffer* StorageSSO;
+                char                BufStorage[SmallSize + sizeof(void*)];
+                SmallStorageBuffer* SmlStorage;
             }
             
 
@@ -77,19 +80,25 @@ namespace Goto
                 if (m_sasStorageBytesLeft >= size)
                 {
                     m_sasStorageBytesLeft -= size;
-                    newMem = OffsetPtr(uStorageSSO.m_ssbSmallBuf, m_sasStorageBytesLeft);
+                    newMem = OffsetPtr(SmlStorage.m_ssbSmallBuf, m_sasStorageBytesLeft);
                 }
                 else
                 {
-                    SmallStorageBuffer* oldStorage = &uStorageSSO;
-                    StorageSSO = (SmallStorageBuffer*) Host::AllocPage(1, HPF_COMMIT | HPF_READ | HPF_WRITE);
-                    StorageSSO->m_ssbPriv = oldStorage;
+                    SmallStorageBuffer* oldStorage = &SmlStorage;
+                    SmlStorage = (SmallStorageBuffer*) Host::AllocPage(1, HPF_COMMIT | HPF_READ | HPF_WRITE);
+                    SmlStorage->m_ssbPriv = oldStorage;
 
                     m_sasStorageBytesLeft = Host::QueryPageSize();
                     return AllocateMemoryImpl(size);
                 }
 
                 return newMem;
+            }
+
+            void FreeMemoryImpl(void* object, size_t size)
+            {
+                // Nothing will be happened. we are not freeing object because its small allocator
+                // so make sure that you will use this in temporal situations.
             }
         };
 
@@ -104,6 +113,13 @@ namespace Goto
 
         };
 
+        class ReusableAllocatorStorage : IAllocatorStorage
+        {
+
+        };
+
+        // This is based on common STL-allocator (STL allocator traits.)
+        // you can use it with default std ADT(Abstract Data Types). but not in multithreading situations.
         template <class StorageT>
         class Allocator : public StorageT
         {
