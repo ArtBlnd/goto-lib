@@ -18,10 +18,10 @@ namespace Goto
 {
     namespace ADT
     {
-        template <class T1, class T2>
-        inline T1 OffsetPtr(T1 base, T2 offs)
+        template <class BaseTy, class OffsTy, class RetnTy = BaseTy>
+        inline BaseTy OffsetPtr(BaseTy base, OffsTy offs)
         {
-            return (T1)((size_t)(base) + (size_t)(offs));
+            return (RetnTy)((size_t)(base) + (size_t)(offs));
         }
 
         NO_VTABLE class IAllocatorStorage
