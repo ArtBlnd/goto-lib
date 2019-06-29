@@ -92,6 +92,7 @@ namespace Goto
                     return AllocateMemoryImpl(size);
                 }
 
+                RecordStorageAllocation(size);
                 return newMem;
             }
 
