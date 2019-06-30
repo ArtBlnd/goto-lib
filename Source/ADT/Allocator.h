@@ -29,17 +29,26 @@ namespace Goto
             size_t m_asCapacity;
 
             size_t m_asAllocatedCount = 0;
-            size_t m_asFreedCount = 0;
+            size_t m_asFreedCount     = 0;
             size_t m_asAllocatedBytes = 0;
-            size_t m_asFreedBytes = 0;
+            size_t m_asFreedBytes     = 0;
 
         protected:
+            // We do check allocating consistent for safty issues such as leaks, curruptions
+            // But some storage like SmallAllocatorStorage does not has deallocation, allocation counters
+            // So make sure that consistent check is disabled for some allocators.
+            bool isCheckAllocatedBytes = true;
+            bool isCheckAllocatedCount = true;
+            bool isCheckFreedBytes     = true;
+            bool isCheckFreedCount     = true;
+
             IAllocatorStorage(size_t initialCapacity)
             {
                 m_asCapacity = initialCapacity;
             }
 
             void RecordStorageAllocation(size_t sizeBytes);
+            void RecordStorageDeallocation(size_t sizeBytes = 0 /* Can empty */);
 
             virtual void* AllocateMemoryImpl(size_t size) = 0;
             virtual void FreeMemoryImpl(void* object, size_t size) = 0;
@@ -59,7 +68,7 @@ namespace Goto
         // and this will not perform common page allocation before use all of these stack allocations
         // so it will be useful when you need to allocate small, fast, and temporal storge.
         template <size_t SmallSize>
-        class SmallAllocatorStroage : IAllocatorStorage
+        class SmallAllocatorStorage : IAllocatorStorage
         {
             size_t m_sasSotrageBytesLeft = SmallSize;
 
@@ -71,7 +80,24 @@ namespace Goto
             
 
         protected:
-            SmallAllocatorStroage() : IAllocatorStorage(SmallSize) { }
+            SmallAllocatorStorage() : IAllocatorStorage(SmallSize) { }
+            ~SmallAllocatorStorage()
+            {
+                // If we allocated pages from OS, deallocating it before destructing
+                // and also before deallocating, we must check that this is a stack storage (which is class storage).
+                if (SmlStorage->m_ssbPriv != nullptr)
+                {
+                    for (SmallStorageBuffer* buffer = SmlStorage;; buffer = buffer->SmlStorage)
+                    {
+                        if (buffer->SmlStorage == nullptr)
+                        {
+                            break;
+                        }
+
+                        Host::FreePage(buffer);
+                    }
+                }
+            }
 
             void* AllocateMemoryImpl(size_t size)
             {
@@ -84,6 +110,9 @@ namespace Goto
                 }
                 else
                 {
+                    // We do not have space lefts for current storage
+                    // allocating new storage from OS (Page)
+
                     SmallStorageBuffer* oldStorage = &SmlStorage;
                     SmlStorage = (SmallStorageBuffer*) Host::AllocPage(1, HPF_COMMIT | HPF_READ | HPF_WRITE);
                     SmlStorage->m_ssbPriv = oldStorage;
@@ -98,6 +127,7 @@ namespace Goto
 
             void FreeMemoryImpl(void* object, size_t size)
             {
+                RecordStorageDeallocation(size);
                 // Nothing will be happened. we are not freeing object because its small allocator
                 // so make sure that you will use this in temporal situations.
             }
