@@ -37,14 +37,30 @@ namespace Goto
             // We do check allocating consistent for safty issues such as leaks, curruptions
             // But some storage like SmallAllocatorStorage does not has deallocation, allocation counters
             // So make sure that consistent check is disabled for some allocators.
-            bool isCheckAllocatedBytes = true;
-            bool isCheckAllocatedCount = true;
-            bool isCheckFreedBytes     = true;
-            bool isCheckFreedCount     = true;
+            bool isCheckBytesConsistent = true;
+            bool isCheckCountConsistent = true;
 
             IAllocatorStorage(size_t initialCapacity)
             {
                 m_asCapacity = initialCapacity;
+            }
+            virtual ~IAllocatorStorage()
+            {
+                if (isCheckBytesConsistent)
+                {
+                    if (m_asAllocatedBytes != m_asFreedBytes)
+                    {
+                        // TODO : Bad consistent assertion.
+                    }
+                }
+
+                if (isCheckCountConsistent)
+                {
+                    if (m_asAllocatedCount != m_asFreedCount)
+                    {
+                        // TODO : Bad consistent assertion.
+                    }
+                }
             }
 
             void RecordStorageAllocation(size_t sizeBytes);
