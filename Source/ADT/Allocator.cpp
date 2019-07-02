@@ -26,5 +26,10 @@ namespace Goto
         {
             return m_asAllocatedCount;
         }
+
+        size_t IAllocatorStorage::GetFloatingMemoryCount() const
+        {
+            return m_asAllocatedCount - m_asFreedCount;
+        }
     }
 }

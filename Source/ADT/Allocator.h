@@ -2,6 +2,7 @@
 #define __GTFW_LIB_ADT_ALLOCATOR_H__
 
 #include <type_traits>
+#include <vector>
 #include <Host/Memory.h>
 
 #ifndef NO_VTABLE
@@ -26,14 +27,14 @@ namespace Goto
 
         NO_VTABLE class IAllocatorStorage
         {
-            size_t m_asCapacity;
-
             size_t m_asAllocatedCount = 0;
             size_t m_asFreedCount     = 0;
             size_t m_asAllocatedBytes = 0;
             size_t m_asFreedBytes     = 0;
 
         protected:
+            size_t m_asCapacity;
+
             // We do check allocating consistent for safty issues such as leaks, curruptions
             // But some storage like SmallAllocatorStorage does not has deallocation, allocation counters
             // So make sure that consistent check is disabled for some allocators.
@@ -72,6 +73,10 @@ namespace Goto
         public:
             size_t GetAllocatedBytes() const;
             size_t GetAllocatedCount() const;
+
+            size_t GetFloatingMemoryCount() const;
+
+            size_t capacity() const;
         };
 
         struct SmallStorageBuffer
@@ -86,18 +91,22 @@ namespace Goto
         template <size_t SmallSize>
         class SmallAllocatorStorage : IAllocatorStorage
         {
-            size_t m_sasSotrageBytesLeft = SmallSize;
+            size_t m_asSotrageBytesLeft = SmallSize;
 
             union
             {
                 char                BufStorage[SmallSize + sizeof(void*)];
                 SmallStorageBuffer* SmlStorage;
-            }
+            };
             
 
         protected:
-            SmallAllocatorStorage() : IAllocatorStorage(SmallSize) { }
-            ~SmallAllocatorStorage()
+            SmallAllocatorStorage() : IAllocatorStorage(SmallSize) 
+            {
+                isCheckBytesConsistent = false;
+            }
+
+            virtual ~SmallAllocatorStorage()
             {
                 // If we allocated pages from OS, deallocating it before destructing
                 // and also before deallocating, we must check that this is a stack storage (which is class storage).
@@ -115,14 +124,14 @@ namespace Goto
                 }
             }
 
-            void* AllocateMemoryImpl(size_t size)
+            void* AllocateMemoryImpl(size_t size) override
             {
                 void* newMem = nullptr;
 
-                if (m_sasStorageBytesLeft >= size)
+                if (m_asSotrageBytesLeft >= size)
                 {
-                    m_sasStorageBytesLeft -= size;
-                    newMem = OffsetPtr(SmlStorage.m_ssbSmallBuf, m_sasStorageBytesLeft);
+                    m_asSotrageBytesLeft -= size;
+                    newMem = OffsetPtr(SmlStorage.m_ssbSmallBuf, m_asSotrageBytesLeft);
                 }
                 else
                 {
@@ -133,7 +142,7 @@ namespace Goto
                     SmlStorage = (SmallStorageBuffer*) Host::AllocPage(1, HPF_COMMIT | HPF_READ | HPF_WRITE);
                     SmlStorage->m_ssbPriv = oldStorage;
 
-                    m_sasStorageBytesLeft = Host::QueryPageSize();
+                    m_asSotrageBytesLeft = Host::QueryPageSize();
                     return AllocateMemoryImpl(size);
                 }
 
@@ -141,7 +150,7 @@ namespace Goto
                 return newMem;
             }
 
-            void FreeMemoryImpl(void* object, size_t size)
+            void FreeMemoryImpl(void* object, size_t size) override
             {
                 RecordStorageDeallocation(size);
                 // Nothing will be happened. we are not freeing object because its small allocator
@@ -152,12 +161,100 @@ namespace Goto
         template <class Ty>
         class ObjectAllocatorStorage : IAllocatorStorage
         {
-            
+            size_t m_asStorageIndex  = 0;
+            size_t m_asStorageLength = 0;
+            Ty**   m_asStorage       = nullptr;
+
+            void RefillObjects()
+            {
+                
+            }
+
+        protected:
+            ObjectAllocatorStorage() : IAllocatorStorage(0) 
+            {
+                RefillObjects();
+            }
+
+            virtual ~ObjectAllocatorStorage()
+            {
+
+            }
+
+            void* AllocateMemoryImpl(size_t size) override
+            {
+                if (sizeof(Ty) != size)
+                {
+                    // TODO : Assertion.
+                }
+
+                if (m_asStorageLength == m_asStorageIndex)
+                {
+                    
+                }
+
+                RecordStorageAllocation(size);
+            }
+
+            void FreeMemoryImpl(void* object, size_t size) override
+            {
+                RecordStorageDeallocation(size);
+            }
         };
 
         class CommonAllocatorStorage : IAllocatorStorage
         {
+            std::vector<void*> m_asAllocatedPages;
+            
+            void*  m_asCurrentPage      = nullptr;
+            size_t m_asCurrentPageIndex = 0;
 
+            void ReallocateCurrentPage()
+            {
+                void* newPage = Host::AllocPage(1, HPF_COMMIT | HPF_READ | HPF_WRITE);;
+
+                m_asAllocatedPages.push_back(newPage);
+                m_asCurrentPage      = newPage;
+                m_asCurrentPageIndex = 0;
+
+                m_asCapacity += Host::QueryPageSize();
+            }
+
+        protected:
+            CommonAllocatorStorage() : IAllocatorStorage(0) 
+            {
+                ReallocateCurrentPage();
+                isCheckBytesConsistent = false;
+            }
+
+            virtual ~CommonAllocatorStorage()
+            {
+                for (void* page : m_asAllocatedPages)
+                {
+                    Host::FreePage(page);
+                }
+            }
+            
+            void* AllocateMemoryImpl(size_t size) override
+            {
+                if (Host::QueryPageSize() >= m_asCurrentPageIndex + size)
+                {
+                    ReallocateCurrentPage();
+                    return AllocateMemoryImpl(size);
+                }
+
+                void* pObject = OffsetPtr(m_asCurrentPage, m_asCurrentPageIndex);
+                m_asCurrentPageIndex += size;
+
+                RecordStorageAllocation(size);
+                return pObject;
+            }
+
+            void FreeMemoryImpl(void* object, size_t size) override
+            {
+                // We are freeing memory at once.
+                RecordStorageDeallocation(size);
+            }
         };
 
         class ReusableAllocatorStorage : IAllocatorStorage
@@ -180,13 +277,29 @@ namespace Goto
 
             void* allocate(size_t size, size_t align)
             {
-                return AllocateMemoryImpl(size);
+                return allocate(size);
             }
 
-            template <class T>
-            T* allocate()
+            template <class Ty>
+            Ty* allocate()
             {
-                return (T*) allocate(sizeof(T));
+                return (Ty*) allocate(sizeof(T));
+            }
+
+            void free(void* object, size_t size)
+            {
+                FreeMemoryImpl(object, size);
+            }
+
+            void free(void* object)
+            {
+                free(object, 0);
+            }
+
+            template <class Ty>
+            void free(Ty* object)
+            {
+                free(object, sizeof(Ty));
             }
         };
 
