@@ -161,24 +161,48 @@ namespace Goto
         template <class Ty>
         class ObjectAllocatorStorage : IAllocatorStorage
         {
+            std::vector<void*> m_asAllocatedPages;
+
             size_t m_asStorageIndex  = 0;
             size_t m_asStorageLength = 0;
             Ty**   m_asStorage       = nullptr;
 
+            void ResizeStorage()
+            {
+                size_t newSize = m_asStorageLength + Host::QueryPageSize() / sizeof(Ty);
+
+                delete[] m_asStorage;
+                m_asStorage       = new Ty*[newSize];
+                m_asStorageLength = newSize;
+            }
+
             void RefillObjects()
             {
-                
+                void* newPage = Host::AllocPage(1, HPF_COMMIT | HPF_READ | HPF_WRITE);
+
+                for (unsigned int i = 0; i < Host::QueryPageSize() / sizeof(Ty); ++i)
+                {
+                    m_asStorage[i] = OffsetPtr(newPage, i * sizeof(Ty));
+                }
+
+                m_asStorageIndex  = Host::QueryPageSize() / sizeof(Ty);
             }
 
         protected:
             ObjectAllocatorStorage() : IAllocatorStorage(0) 
             {
+                ResizeStorage();
                 RefillObjects();
             }
 
             virtual ~ObjectAllocatorStorage()
             {
+                for (void* page : m_asAllocatedPages)
+                {
+                    Host::FreePage(page);
+                }
 
+                delete[] m_asStorage;
             }
 
             void* AllocateMemoryImpl(size_t size) override
@@ -188,16 +212,23 @@ namespace Goto
                     // TODO : Assertion.
                 }
 
-                if (m_asStorageLength == m_asStorageIndex)
+                if (m_asStorageIndex == 0)
                 {
-                    
+                    ResizeStorage();
+                    RefillObjects();
+
+                    return AllocateMemoryImpl(size);
                 }
 
+                Ty* newObject = m_asStorage[--m_asStorageIndex];
                 RecordStorageAllocation(size);
+
+                return newObject;
             }
 
             void FreeMemoryImpl(void* object, size_t size) override
             {
+                m_asStorage[m_asStorageIndex++] = (Ty*)object;
                 RecordStorageDeallocation(size);
             }
         };
@@ -211,7 +242,7 @@ namespace Goto
 
             void ReallocateCurrentPage()
             {
-                void* newPage = Host::AllocPage(1, HPF_COMMIT | HPF_READ | HPF_WRITE);;
+                void* newPage = Host::AllocPage(1, HPF_COMMIT | HPF_READ | HPF_WRITE);
 
                 m_asAllocatedPages.push_back(newPage);
                 m_asCurrentPage      = newPage;
@@ -259,7 +290,7 @@ namespace Goto
 
         class ReusableAllocatorStorage : IAllocatorStorage
         {
-
+            
         };
 
         // This is based on common STL-allocator (STL allocator traits.)
