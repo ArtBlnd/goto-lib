@@ -15,6 +15,12 @@
 #endif
 #endif
 
+#ifdef USE_LARGE_PAGE
+#define DEFAULT_PAGE_COUNT 4
+#else
+#define DEFAULT_PAGE_COUNT 1
+#endif
+
 namespace Goto
 {
     namespace ADT
@@ -85,10 +91,16 @@ namespace Goto
             char                m_ssbSmallBuf[0];
         };
 
+        // class SmallAllocatorStorage 
+        //
         // This allocation storage will use stack, which is size of SmallSize in template operand
         // and this will not perform common page allocation before use all of these stack allocations
         // so it will be useful when you need to allocate small, fast, and temporal storge.
-        template <size_t SmallSize>
+        //
+        // Template Parameter
+        //      size_t SmallSize    : Size that uses storage of object its own.
+        //      size_t PageAllocCnt : Count of pages that allocating new pages when its needed
+        template <size_t SmallSize, size_t PageAllocCnt = DEFAULT_PAGE_COUNT>
         class SmallAllocatorStorage : IAllocatorStorage
         {
             size_t m_asSotrageBytesLeft = SmallSize;
@@ -158,7 +170,12 @@ namespace Goto
             }
         };
 
-        template <class Ty>
+        // class ObjectAllocatorStorage
+        //
+        // Template Parameter
+        //      Ty                  : Type that will allocate
+        //      size_t PageAllocCnt : Count of pages that allocating new pages when its needed
+        template <class Ty, size_t PageAllocCnt = DEFAULT_PAGE_COUNT>
         class ObjectAllocatorStorage : IAllocatorStorage
         {
             std::vector<void*> m_asAllocatedPages;
@@ -233,6 +250,11 @@ namespace Goto
             }
         };
 
+        // class CommonAllocatorStorage
+        // 
+        // Template Parameter
+        //      size_t PageAllocCnt : Count of pages that allocating new pages when its needed
+        template <size_t PageAllocCnt = DEFAULT_PAGE_COUNT>
         class CommonAllocatorStorage : IAllocatorStorage
         {
             std::vector<void*> m_asAllocatedPages;
@@ -288,6 +310,7 @@ namespace Goto
             }
         };
 
+        template <size_t PageAllocCnt = DEFAULT_PAGE_COUNT>
         class ReusableAllocatorStorage : IAllocatorStorage
         {
             
