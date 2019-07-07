@@ -314,6 +314,16 @@ namespace Goto
         class ReusableAllocatorStorage : IAllocatorStorage
         {
             
+        protected:
+            void* AllocateMemoryImpl(size_t size) override
+            {
+
+            }
+
+            void FreeMemoryImpl(void* object, size_t size) override
+            {
+                
+            }
         };
 
         // This is based on common STL-allocator (STL allocator traits.)
