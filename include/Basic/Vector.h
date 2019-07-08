@@ -1,5 +1,5 @@
-#ifndef __GTFW_LIB_ADT_VECTOR_H__
-#define __GTFW_LIB_ADT_VECTOR_H__
+#ifndef __GOTO_LIB_STL_VECTOR_H__
+#define __GOTO_LIB_STL_VECTOR_H__
 
 namespace Goto
 {

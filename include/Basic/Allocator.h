@@ -1,5 +1,5 @@
-#ifndef __GTFW_LIB_ADT_ALLOCATOR_H__
-#define __GTFW_LIB_ADT_ALLOCATOR_H__
+#ifndef __GOTO_LIB_STL_ALLOCATOR_H__
+#define __GOTO_LIB_STL_ALLOCATOR_H__
 
 #include <type_traits>
 #include <vector>
@@ -310,6 +310,9 @@ namespace Goto
             }
         };
 
+        // ReusableAllocatorStorage
+        //
+        // This allocator reuses its page storage 
         template <size_t PageAllocCnt = DEFAULT_PAGE_COUNT>
         class ReusableAllocatorStorage : IAllocatorStorage
         {
