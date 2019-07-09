@@ -25,8 +25,8 @@ endif()
 #
 # Directories
 #
-include_directories(${Goto_C_FRONTEND_SRC_PATH})
-add_subdirectory(${Goto_C_FRONTEND_INC_PATH})
+include_directories(${GOTO_INC_PATH})
+add_subdirectory(${GOTO_SRC_PATH})
 
 #
 # Testing Options.
@@ -34,18 +34,18 @@ add_subdirectory(${Goto_C_FRONTEND_INC_PATH})
 option(ENABLE_TESTS "Enables building tests using GTest" ON)
 if(ENABLE_TESTS)
     include(cmake/AddTest.cmake)
-    add_subdirectory(${Goto_C_FRONTEND_TEST_PATH})
+    add_subdirectory(${GOTO_TEST_PATH})
 endif()
 
 #
 # Platform Pre-definitions
 #
 if(WIN32)
-    add_definition(-DGOTO_PLATFORM_WINDOWS)
+    add_definitions(-DGOTO_PLATFORM_WINDOWS)
 endif()
 
 if (UNIX)
-    add_definition(-DGOTO_PLATFORM_UNIX)
+    add_definitions(-DGOTO_PLATFORM_UNIX)
 endif()
 
 #
@@ -53,5 +53,5 @@ endif()
 # 
 option(ENABLE_ALLOCATOR_USE_LARGE_PAGE "Enable using large page when its possible" ON)
 if(ENABLE_ALLOCATOR_USE_LARGE_PAGE)
-    add_definition(-DUSE_LARGE_PAGE)
+    add_definitions(-DUSE_LARGE_PAGE)
 endif()
